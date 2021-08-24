@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Installation: Add this script in your path (or create a link in your path)
+# Pre-requesite:
+#   `brew install sshuttle`
+#   export APP_INTERFACE_DIR=<path-to-your-app-interface-clone> # default = $HOME/src/app-interface
+# Nice to have (avoids having to enter your password):
+#   shuttle --sudoers
+#   sudo sh -c "echo '$USER ALL=NOPASSWD: /sbin/route' >> /private/etc/sudoers.d/sshuttle_auto"
+# Usage: cluster-proxy
+# What it does:
+#   - find all hive cluster CIDRs from app-interface
+#   - due to issue https://github.com/sshuttle/sshuttle/issues/538, add route to hive cidrs via ens0
+#   - run sshuttle for all hive cluster CIDRs
+#   - cleanup routes on SIGINT (CTRL-C) to stop sshuttle
+
+# From Maor
+# get_hive_cidrs(){
+#   #echo "$(curl -s -H "Authorization: Basic REDACTED" -g "https://app-interface.devshift.net/graphql?query={namespaces:namespaces_v1{name,cluster{network{vpc}}}}" | jq -r '.data.namespaces[] | select(.name=="hive") | .cluster.network.vpc' | tr '\n' ' ')"
+# }
+# alias ssh-hive='(set -x ; sshuttle -r bastion.ci.ext.devshift.net $(get_hive_cidrs))'
+
+CLUSTER_PROXY_CIDRS=$(grep '^  vpc:' "${APP_INTERFACE_DIR:-$HOME/src/app-interface}"/data/openshift/hive*/cluster.yml | awk '{print $3}' | tr '\n' ' ')
+
+# https://github.com/sshuttle/sshuttle/issues/538
+_cluster_proxy_route_cleanup() {
+  echo "CLEANUP !"
+  for cidr in ${CLUSTER_PROXY_CIDRS} ; do
+    set -x
+    sudo route delete -net "$cidr" -interface en0
+    set +x
+  done
+}
+
+trap _cluster_proxy_route_cleanup INT
+
+for cidr in ${CLUSTER_PROXY_CIDRS} ; do
+  set -x
+  sudo route add -net "$cidr" -interface en0
+  set +x
+done
+
+echo "Proxying $CLUSTER_PROXY_CIDRS ..."
+sshuttle -r bastion.ci.ext.devshift.net ${CLUSTER_PROXY_CIDRS}
