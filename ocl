@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: source this file from your ~/.bash-profile
+# Usage: source this file from your ~/.bash_profile
 
 # Parse app-interface to retrieve cluster information in $HOME/.ocl files with 'oclgen'.
 #   Just run 'oclgen'. It will parse files from ${APP_INTERFACE_DIR} or $HOME/src/app-interface by default
@@ -30,13 +30,13 @@ ocl() {
         echo "Known clusters:"
         echo
         ls -1 "$HOME/.ocl"
-        exit 1
+        return 1
     fi
 
     if [ ! -f "$HOME/.ocl/$1" ] ; then
         echo "File not found $HOME/.ocl/$1"
-        echo "Missign cluster $1 definition"
-        exit 1
+        echo "Missing cluster $1 definition"
+        return 1
     fi
 
     # unset all variables starting with OCL_
