@@ -57,11 +57,12 @@ ocl() {
     if [ -f "${KUBECONFIG}" ] && oc whoami ; then
         echo "Already logged in"
     else
-        open https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/token/request
+        # open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/token/request"
+        open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/authorize?client_id=openshift-browser-client&idp=github-app-sre&redirect_uri=https%3A%2F%2Foauth-openshift.${OCL_APPS_URL_SUFFIX}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
         echo "Please login on the open web window copy the generated token here"
         read -r TOKEN
         if [ -n "${TOKEN}" ] ; then
-            (set -e ; oc login "${OCL_API_URL}" --token "${TOKEN}")
+            (set -x ; oc login "${OCL_API_URL}" --token "${TOKEN}")
         else
             echo "Empty token, skipping login"
         fi
