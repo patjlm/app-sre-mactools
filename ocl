@@ -3,7 +3,7 @@
 # Usage: source this file from your ~/.bash_profile
 
 # Parse app-interface to retrieve cluster information in $HOME/.ocl files with 'oclgen'.
-#   Just run 'oclgen'. It will parse files from ${APP_INTERFACE_DIR} or $HOME/src/app-interface by default
+#   Just run 'oclgen'. It will parse files from ${APP_INTERFACE_DIR} or $HOME/dev/service/app-interface by default
 # 
 # Automate openshift login against cluster info retrieved with oclgen and set of some shell variable with 'ocl'.
 #   The following variables will be set:
@@ -91,7 +91,7 @@ _ocl_ps1() {
 
 oclgen() {
     local clustername api_url domain
-    local app_interface="${APP_INTERFACE_DIR:-$HOME/src/app-interface}"
+    local app_interface="${APP_INTERFACE_DIR:-$HOME/dev/service/app-interface}"
     for f in $(grep -lR '^$schema: /openshift/cluster-1.yml' ${app_interface} | grep -E 'ya?ml') ; do
         clustername=$(grep '^name:' "$f" | cut -f2 -d' ')
         echo "Parsing $f into $HOME/.ocl/$clustername"

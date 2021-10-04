@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -x
+
+APP_INTERFACE=$HOME/dev/service/app-interface
+# QONTRACT_SERVER=$HOME/dev/app-sre/qontract-server
+
+# todo? trap a signal to refresh the bundle and restart or update the server ?
+
+# cd "$QONTRACT_SERVER"
+# make bundle APP_INTERFACE_PATH=$APP_INTERFACE
+# make docker-run APP_INTERFACE_PATH=$APP_INTERFACE
+
+cd ${APP_INTERFACE}
+make server

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# to be sourced in ~/.bash_profile
+
+# creates an alias 'dev-$dir' for each directory ${DEVROOT:-$HOME/dev}/*/* to cd in it
+
+for d in "${DEVROOT:-$HOME/dev}"/*/* ; do
+    [[ -d $d ]] && alias dev-$(basename $d)="cd $d"
+done
+
+qli() {
+    (
+        dev-qontract-reconcile
+        export APP_INTERFACE_STATE_BUCKET=app-interface-production
+        export APP_INTERFACE_STATE_BUCKET_ACCOUNT=app-sre
+        source venv/bin/activate
+        qontract-cli --config ${QONTRACT_CONFIG:-config.debug.toml} "$@"
+    )
+}
+
+qli-dev() {
+    QONTRACT_CONFIG=config.debug.toml qli "$@"
+}
