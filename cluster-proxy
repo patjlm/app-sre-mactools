@@ -21,7 +21,8 @@
 # alias ssh-hive='(set -x ; sshuttle -r bastion.ci.ext.devshift.net $(get_hive_cidrs))'
 
 # CLUSTER_PROXY_CIDRS=$(grep '^  vpc:' "${APP_INTERFACE_DIR:-$HOME/dev/service/app-interface}"/data/openshift/hive*/cluster.yml | awk '{print $3}' | tr '\n' ' ')
-CLUSTER_PROXY_CIDRS="10.0.0.0/8"
+# CLUSTER_PROXY_CIDRS="10.0.0.0/8"
+CLUSTER_PROXY_CIDRS="10.125.0.0/16 10.163.0.0/16 10.133.0.0/16 10.162.0.0/16 10.134.0.0/16 10.124.0.0/16 10.123.0.0/16 10.164.0.0/16 10.135.0.0/16 10.132.0.0/16"
 
 # https://github.com/sshuttle/sshuttle/issues/538
 _cluster_proxy_route_cleanup() {
