@@ -17,7 +17,16 @@ qli() {
         qontract-cli --config ${QONTRACT_CONFIG:-config.debug.toml} "$@"
     )
 }
+alias qc=qli
 
 qli-dev() {
     QONTRACT_CONFIG=config.debug.toml qli "$@"
 }
+qli-prod() {
+    QONTRACT_CONFIG=config.prod.toml qli "$@"
+}
+
+duplicate-dashboard-uid() {
+    oc get configmap -l grafana_dashboard=true -o json | jq '[.items[].data[] | fromjson] | group_by(.uid)[] | select(length>1) | {"uid": .[0].uid, "titles": [.[].title]}'
+}
+
