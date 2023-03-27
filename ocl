@@ -58,7 +58,7 @@ ocl() {
         echo "Already logged in"
     else
         # open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/token/request"
-        open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/authorize?client_id=openshift-browser-client&idp=github-app-sre&redirect_uri=https%3A%2F%2Foauth-openshift.${OCL_APPS_URL_SUFFIX}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
+        open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/authorize?client_id=openshift-browser-client&idp=${OCL_IDP}&redirect_uri=https%3A%2F%2Foauth-openshift.${OCL_APPS_URL_SUFFIX}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
         echo "Please login on the open web window copy the generated token here"
         read -r TOKEN
         if [ -n "${TOKEN}" ] ; then
@@ -97,11 +97,13 @@ oclgen() {
         echo "Parsing $f into $HOME/.ocl/$clustername"
         api_url=$(grep '^serverUrl:' "$f" | cut -f2 -d' ')
         domain=$(echo "${api_url:12}" | cut -f1 -d:)
+        grep -q 'name: redhat-app-sre-auth' "$f" && idp=redhat-app-sre-auth
         {
             echo 'OCL_CLUSTER_NAME=$(basename "${BASH_SOURCE}")'
             echo "OCL_DOMAIN=$domain"
             echo "OCL_API_URL=${api_url}"
             echo "OCL_CONSOLE_URL=$(grep '^consoleUrl:' "$f" | cut -f2 -d' ')"
+            echo "OCL_IDP=${idp:-github-app-sre}"
         } > "$HOME/.ocl/$clustername"
     done
 }
