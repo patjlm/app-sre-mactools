@@ -55,15 +55,21 @@ ocl() {
 
     export KUBECONFIG="${HOME}/.kube/config_${OCL_CLUSTER_NAME}"
 
+    local token
+
     if [ -f "${KUBECONFIG}" ] && oc whoami ; then
         echo "Already logged in"
+    elif [ "${OCL_IDP}" = "redhat-app-sre-auth" ]; then
+        echo "Retrieving token from redhat-app-sre-auth"
+        token=$(_token_from_kerberos)
+        (set -x ; oc login "${OCL_API_URL}" --token "${token}")
     else
         # open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/token/request"
         open "https://oauth-openshift.${OCL_APPS_URL_SUFFIX}/oauth/authorize?client_id=openshift-browser-client&idp=${OCL_IDP}&redirect_uri=https%3A%2F%2Foauth-openshift.${OCL_APPS_URL_SUFFIX}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
         echo "Please login on the open web window copy the generated token here"
-        read -r TOKEN
-        if [ -n "${TOKEN}" ] ; then
-            (set -x ; oc login "${OCL_API_URL}" --token "${TOKEN}")
+        read -r token
+        if [ -n "${token}" ] ; then
+            (set -x ; oc login "${OCL_API_URL}" --token "${token}")
         else
             echo "Empty token, skipping login"
         fi
@@ -86,7 +92,7 @@ _ocl_ps1() {
         echo "${COLOR_GRAY}${OCL_CLUSTER_NAME} / $(kubens --current) (Console: ${OCL_CONSOLE_URL})${COLOR_DEFAULT}"
     else
         #echo "${COLOR_GRAY}N/A${COLOR_DEFAULT}"
-	echo
+	    echo "${COLOR_GRAY}$(oc config current-context 2>/dev/null)${COLOR_DEFAULT}"
     fi
 }
 
@@ -120,3 +126,43 @@ _ocl() {
     return 0
 }
 complete -F _ocl ocl
+
+_token_from_kerberos() {
+    local cookies_dir oauth_host oauth_url sso_url post_vars token
+    if ! klist --test; then
+        kinit
+    fi
+    spinning_wheel
+    cookies_dir=$(mktemp)
+    spinning_wheel
+    oauth_host="oauth-openshift.apps.${OCL_DOMAIN}"
+    spinning_wheel
+    oauth_url=$(curl -s -c "${cookies_dir}" -b "${cookies_dir}" -L "https://${oauth_host}/oauth/token/request" | awk -F '"' '/redhat-app-sre-auth/ { gsub("", "", $2); gsub("amp;", "", $2); print $2}')
+    spinning_wheel
+    sso_url=$(curl -s -c "${cookies_dir}" -b "${cookies_dir}" -I "https://${oauth_host}${oauth_url}" | awk '/Location: / { gsub("\r", "", $2); print $2 }')
+    spinning_wheel
+    post_vars=$(curl -s -c "${cookies_dir}" -b "${cookies_dir}" -L -k --negotiate -u : "${sso_url}" | awk -F '"' '/input type/ { print $4"="$6 }' | tr '\n' '&')
+    spinning_wheel
+    token=$(curl -s -c "${cookies_dir}" -b "${cookies_dir}" -XPOST -d "${post_vars}" "https://${oauth_host}/oauth/token/display" | grep '<code>' | sed 's/\s*<[^>]*>//g')
+    spinning_wheel
+    rm -f "${cookies_dir}"
+    echo "${token}"
+}
+
+spinning_wheel() {
+    #global var
+    : ${SPINNING_WHEEL_INDEX:=1}
+    local chars="/-\|"
+    # local chars='⠁⠂⠄⡀⢀⠠⠐⠈'
+    # local chars="▁▂▃▄▅▆▇█▇▆▅▄▃▂▁"
+    # local chars="▉▊▋▌▍▎▏▎▍▌▋▊▉"
+    # local chars='←↖↑↗→↘↓↙'
+    # local chars='▖▘▝▗'
+    # local chars='┤┘┴└├┌┬┐'
+    # local chars='◢◣◤◥'
+    # local chars='◰◳◲◱'
+    # local chars='◴◷◶◵'
+    # local chars='◐◓◑◒'
+    # local chars='⣾⣽⣻⢿⡿⣟⣯⣷'
+    printf "\b${chars:SPINNING_WHEEL_INDEX++%${#chars}:1}" 1>&2
+}
